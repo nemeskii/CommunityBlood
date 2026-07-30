@@ -1,0 +1,541 @@
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.page {
+  --ink: #0a0a0a;
+  --paper: #f4f2ed;
+  --crimson: #e31e24;
+  --grey: #8a8880;
+  --grey-dark: #b0aea6;
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--ink);
+  color: var(--paper);
+  overflow-x: hidden;
+  min-height: 100vh;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav a {
+  color: var(--grey-dark);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.nav a:hover {
+  color: var(--paper);
+  border-color: var(--crimson);
+}
+
+.mark {
+  font-family: "Anton", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+}
+
+.mark span {
+  color: var(--crimson);
+}
+
+.adminLinkTop {
+  color: var(--grey-dark);
+  font-size: 12px;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.adminLinkTop:hover {
+  color: var(--paper);
+  border-color: var(--paper);
+}
+
+.hero {
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: clamp(11px, 1.5vw, 13px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 20px;
+}
+
+.heading {
+  font-family: "Anton", sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(48px, 11vw, 128px);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  margin: 0 auto 28px;
+  max-width: 900px;
+}
+
+.heading em {
+  font-style: normal;
+  color: var(--crimson);
+}
+
+.text {
+  font-size: clamp(15px, 2vw, 18px);
+  line-height: 1.6;
+  color: var(--grey-dark);
+  max-width: 520px;
+  margin: 0 auto 40px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.button {
+  display: inline-block;
+  padding: 18px 36px;
+  background: var(--crimson);
+  color: #fff;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 4px 20px rgba(227, 30, 36, 0.35);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(227, 30, 36, 0.45);
+}
+
+.buttonGhost {
+  background: transparent;
+  color: var(--paper);
+  border: 1.5px solid var(--paper);
+  box-shadow: none;
+}
+
+.buttonGhost:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pulseWrap {
+  background: var(--ink);
+  padding: 0 24px 40px;
+}
+
+.pulse {
+  display: block;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 48px;
+}
+
+.pulsePath {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: draw 1.6s ease-out 0.3s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulsePath {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.statsBand {
+  background: var(--crimson);
+  padding: 64px 24px;
+}
+
+.stats {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.statNum {
+  font-family: "Anton", sans-serif;
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 1;
+  color: #fff;
+  display: block;
+}
+
+.statLabel {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: clamp(11px, 1.5vw, 13px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 8px;
+}
+
+.sectionLight {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 80px 24px;
+}
+
+.sectionInner {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-family: "Anton", sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(28px, 5vw, 44px);
+  margin: 0 0 44px;
+  letter-spacing: -0.01em;
+}
+
+.bloodGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.bloodCard {
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.bloodCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(10, 10, 10, 0.14);
+  border-color: var(--crimson);
+}
+
+.bloodCard:focus-visible {
+  outline: 3px solid var(--crimson);
+  outline-offset: 2px;
+}
+
+.bloodCardActive {
+  border-color: var(--crimson);
+  box-shadow: 0 12px 24px rgba(227, 30, 36, 0.18);
+}
+
+.bloodCardEmpty {
+  opacity: 0.6;
+}
+
+.bloodCardEmpty:hover {
+  border-color: var(--ink);
+  transform: none;
+  box-shadow: none;
+}
+
+.inventoryNote {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--grey);
+  margin: -24px 0 32px;
+}
+
+.bloodType {
+  font-family: "Anton", sans-serif;
+  font-size: 28px;
+  color: var(--ink);
+}
+
+.bloodBarTrack {
+  background: #e3e0d8;
+  border-radius: 4px;
+  height: 6px;
+  margin: 14px 0 10px;
+  overflow: hidden;
+}
+
+.bloodBarFill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.bloodLevel {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bloodUnits {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.bloodCardActive .bloodUnits {
+  grid-template-rows: 1fr;
+}
+
+.bloodUnitsInner {
+  overflow: hidden;
+}
+
+.bloodUnitsText {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--grey);
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid #e3e0d8;
+}
+
+.bloodUnitsNum {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sectionDark {
+  background: var(--ink);
+  padding: 80px 24px 96px;
+}
+
+.steps {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.stepN {
+  font-family: "Anton", sans-serif;
+  font-size: 72px;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--crimson);
+  margin-bottom: 16px;
+}
+
+.stepTitle {
+  font-family: "Anton", sans-serif;
+  text-transform: uppercase;
+  font-size: 22px;
+  color: var(--paper);
+  margin: 0 0 10px;
+}
+
+.stepBody {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--grey-dark);
+}
+
+.ctaBand {
+  background: var(--crimson);
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.ctaHeading {
+  font-family: "Anton", sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(36px, 8vw, 80px);
+  color: #fff;
+  line-height: 1;
+  margin: 0;
+}
+
+.about {
+  max-width: 760px;
+  text-align: center;
+}
+
+.aboutText {
+  font-size: clamp(15px, 2vw, 18px);
+  line-height: 1.7;
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+.contact {
+  background: var(--ink);
+  padding: 80px 24px 96px;
+}
+
+.contactInner {
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contactTitle {
+  font-family: "Anton", sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(28px, 5vw, 44px);
+  color: var(--paper);
+  margin: 0 0 12px;
+}
+
+.contactSub {
+  color: var(--grey-dark);
+  font-size: 15px;
+  margin: 0 0 44px;
+}
+
+.contactLinks {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.contactLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background: rgba(244, 242, 237, 0.05);
+  border: 1px solid rgba(244, 242, 237, 0.15);
+  border-radius: 999px;
+  color: var(--paper);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.contactLink:hover {
+  border-color: var(--crimson);
+  background: rgba(227, 30, 36, 0.1);
+  transform: translateY(-2px);
+}
+
+.contactLink svg {
+  width: 18px;
+  height: 18px;
+  color: var(--crimson);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .stats {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    text-align: center;
+  }
+  .bloodGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+  .hero {
+    min-height: 82vh;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .actions .button {
+    text-align: center;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  .nav {
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+    order: 3;
+    width: 100%;
+  }
+  .contactLinks {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .contactLink {
+    justify-content: center;
+  }
+}
