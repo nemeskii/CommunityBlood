@@ -46,7 +46,7 @@ class AdminPasswordResetController extends Controller
         $resetUrl = "{$frontendUrl}/admin/reset-password?token={$token}&email=" . urlencode($user->email);
 
         $response = Http::post('https://api.emailjs.com/api/v1.0/email/send', [
-            'service_id' => env('EMAILJS_SERVICE_ID'),
+            'service_id' => env('EMAILJS_RESET_SERVICE_ID'),
             'template_id' => env('EMAILJS_RESET_TEMPLATE_ID'),
             'user_id' => env('EMAILJS_PUBLIC_KEY'),
             'accessToken' => env('EMAILJS_PRIVATE_KEY'),
