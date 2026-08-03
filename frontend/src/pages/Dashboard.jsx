@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import "../styles/theme.css";
 import "./AdminDashboard.css";
+import { downloadReferenceCard } from "../utils/referenceCard";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const TODAY = new Date().toISOString().split("T")[0];
@@ -24,6 +25,28 @@ export default function Dashboard() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formMessage, setFormMessage] = useState("");
+  const [lastDonationCode, setLastDonationCode] = useState("");
+  const [lastDonation, setLastDonation] = useState(null);
+
+  // --- Request blood form state ---
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestForm, setRequestForm] = useState({
+    blood_group: "",
+    city: "",
+    requester_name: "",
+    requester_phone: "",
+    requester_email: "",
+    reason: "",
+  });
+  const [requestStatus, setRequestStatus] = useState({
+    loading: false,
+    error: "",
+    submitted: false,
+    referenceCode: "",
+  });
+
+  const [myRequests, setMyRequests] = useState([]);
+  const [myRequestsLoading, setMyRequestsLoading] = useState(true);
 
   const fetchProfile = async () => {
     setProfileLoading(true);
@@ -37,6 +60,41 @@ export default function Dashboard() {
       }
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const [pendingMatches, setPendingMatches] = useState([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
+  const [matchActionId, setMatchActionId] = useState(null);
+  const [matchNotice, setMatchNotice] = useState("");
+
+  const fetchPendingMatches = async () => {
+    setMatchesLoading(true);
+    try {
+      const res = await api.get("/donor/matches/pending");
+      setPendingMatches(res.data);
+    } catch (err) {
+      // non-critical — the rest of the dashboard still works without this
+    } finally {
+      setMatchesLoading(false);
+    }
+  };
+
+  const handleMatchResponse = async (matchId, action) => {
+    setMatchActionId(matchId);
+    setMatchNotice("");
+    try {
+      const res = await api.post(`/donor/matches/${matchId}/respond`, {
+        action,
+      });
+      setMatchNotice(res.data.message);
+      setPendingMatches((prev) => prev.filter((m) => m.id !== matchId));
+    } catch (err) {
+      setMatchNotice(
+        err.response?.data?.message || "Could not record your response."
+      );
+    } finally {
+      setMatchActionId(null);
     }
   };
 
@@ -69,10 +127,24 @@ export default function Dashboard() {
     }
   };
 
+  const fetchMyRequests = async () => {
+    setMyRequestsLoading(true);
+    try {
+      const res = await api.get("/donor/blood-requests");
+      setMyRequests(res.data);
+    } catch (err) {
+      // non-critical — the rest of the dashboard still works without this
+    } finally {
+      setMyRequestsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchInventory();
     fetchDonations();
+    fetchPendingMatches();
+    fetchMyRequests();
   }, []);
 
   const handleChange = (e) =>
@@ -85,6 +157,8 @@ export default function Dashboard() {
     try {
       const res = await api.post("/donations", form);
       setFormMessage(res.data.message);
+      setLastDonationCode(res.data.donation?.reference_code || "");
+      setLastDonation(res.data.donation || null);
       setForm({ blood_group: "", units: 1, donation_date: "", location: "" });
       fetchDonations();
     } catch (err) {
@@ -102,6 +176,89 @@ export default function Dashboard() {
     }
     localStorage.removeItem("donor_token");
     navigate("/donor/login");
+  };
+
+  const handleRequestChange = (e) => {
+    setRequestForm({ ...requestForm, [e.target.name]: e.target.value });
+  };
+
+  const handleRequestSubmit = async (e) => {
+    e.preventDefault();
+    setRequestStatus({ loading: true, error: "", submitted: false, referenceCode: "" });
+    try {
+      const res = await api.post("/blood-requests", {
+        ...requestForm,
+        city: requestForm.city || null,
+      });
+      setRequestStatus({
+        loading: false,
+        error: "",
+        submitted: true,
+        referenceCode: res.data.request?.reference_code || "",
+      });
+      fetchMyRequests();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      const msg = errors
+        ? Object.values(errors)[0][0]
+        : err.response?.data?.message ||
+          "Could not submit request. Please try again.";
+      setRequestStatus({ loading: false, error: msg, submitted: false });
+      if (err.response?.status === 409) {
+        setShowRequestForm(false);
+      }
+    }
+  };
+
+  const handleDownloadDonationPdf = (donation) => {
+    downloadReferenceCard({
+      type: "donation",
+      referenceCode: donation.reference_code,
+      heading: "Donation reference",
+      rows: [
+        { label: "Donor", value: donor?.full_name },
+        { label: "Phone", value: donor?.phone },
+        { label: "Blood group", value: donation.blood_group },
+        { label: "Units", value: donation.units },
+        { label: "Date", value: donation.donation_date },
+        { label: "Location", value: donation.location },
+      ],
+    });
+  };
+
+  const handleDownloadRequestPdf = (record) => {
+    // Default to the form just submitted (no persisted record yet);
+    // otherwise use the actual saved request row from "My requests".
+    const r = record || {
+      reference_code: requestStatus.referenceCode,
+      requester_name: requestForm.requester_name,
+      requester_phone: requestForm.requester_phone,
+      requester_email: requestForm.requester_email,
+      blood_group: requestForm.blood_group,
+      city: requestForm.city,
+      reason: requestForm.reason,
+    };
+
+    downloadReferenceCard({
+      type: "request",
+      referenceCode: r.reference_code,
+      heading: "Blood request reference",
+      rows: [
+        { label: "Requester", value: r.requester_name },
+        { label: "Phone", value: r.requester_phone },
+        { label: "Email", value: r.requester_email },
+        { label: "Blood group", value: r.blood_group },
+        { label: "City", value: r.city },
+        { label: "Reason", value: r.reason },
+      ],
+    });
+  };
+
+  const requestStatusLabel = (status, outcome) => {
+    if (status === "closed" && outcome === "fulfilled") return "Fulfilled";
+    if (status === "closed") return "Closed";
+    if (status === "contacted") return "Donor contacted";
+    return "Pending";
   };
 
   const isDonor = !!donor?.blood_group;
@@ -165,6 +322,72 @@ export default function Dashboard() {
           </div>
         )}
 
+        {!matchesLoading && pendingMatches.length > 0 && (
+          <div style={{ marginBottom: 28, maxWidth: 560 }}>
+            <h2 style={{ margin: "0 0 14px", fontSize: 18 }}>
+              You've been matched
+            </h2>
+            {matchNotice && (
+              <div
+                style={{
+                  background: "rgba(138, 109, 59, 0.1)",
+                  border: "1px solid #8A6D3B",
+                  color: "#8A6D3B",
+                  padding: "10px 14px",
+                  borderRadius: 6,
+                  marginBottom: 14,
+                  fontSize: 14,
+                }}
+              >
+                {matchNotice}
+              </div>
+            )}
+            {pendingMatches.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E4DCC8",
+                  borderRadius: 8,
+                  padding: "18px 20px",
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ fontSize: 15, marginBottom: 4 }}>
+                  A request for{" "}
+                  <strong>{m.blood_request?.blood_group}</strong> blood
+                  {m.blood_request?.city ? ` in ${m.blood_request.city}` : ""}{" "}
+                  has been matched to you.
+                </div>
+                {m.blood_request?.reason && (
+                  <div
+                    style={{ fontSize: 13, color: "#5A5344", marginBottom: 10 }}
+                  >
+                    {m.blood_request.reason}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                  <button
+                    className="btn btn-primary"
+                    disabled={matchActionId === m.id}
+                    onClick={() => handleMatchResponse(m.id, "confirm")}
+                  >
+                    {matchActionId === m.id ? "Saving…" : "Confirm"}
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ border: "1px solid #AB1D2E", color: "#AB1D2E" }}
+                    disabled={matchActionId === m.id}
+                    onClick={() => handleMatchResponse(m.id, "decline")}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {!inventoryLoading && inventory.length > 0 && (
           <div style={{ marginBottom: 28, maxWidth: 720 }}>
             <h2 style={{ margin: "0 0 14px", fontSize: 18 }}>
@@ -202,6 +425,314 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {!profileLoading && (
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #E4DCC8",
+              borderRadius: 8,
+              padding: "22px 26px",
+              marginBottom: 28,
+              maxWidth: 720,
+            }}
+          >
+            <h2 style={{ margin: "0 0 8px", fontSize: 18 }}>Need blood?</h2>
+            <p style={{ margin: "0 0 16px", color: "#5A5344", fontSize: 15 }}>
+              Submit a request and our team will connect you with a matching
+              donor. We don't share donor contact details directly.
+            </p>
+
+            {requestStatus.submitted ? (
+              <div
+                style={{
+                  background: "rgba(47, 107, 79, 0.12)",
+                  border: "1px solid #2F6B4F",
+                  color: "#2F6B4F",
+                  padding: "12px 14px",
+                  borderRadius: 6,
+                  fontSize: 15,
+                }}
+              >
+                Request sent. Our team will reach out to a matching donor and
+                connect you shortly.
+                {requestStatus.referenceCode && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      background: "#fff",
+                      border: "1px dashed #2F6B4F",
+                      borderRadius: 6,
+                      padding: "12px 14px",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "#5A5344" }}>
+                      Show this code at the hospital when you go to receive
+                      blood, so staff can confirm it against your request:
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        marginTop: 4,
+                      }}
+                    >
+                      {requestStatus.referenceCode}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{
+                        marginTop: 12,
+                        border: "1px solid #2F6B4F",
+                        color: "#2F6B4F",
+                        fontSize: 13,
+                        padding: "6px 12px",
+                      }}
+                      onClick={() => handleDownloadRequestPdf()}
+                    >
+                      Download PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : !showRequestForm ? (
+              <>
+                {requestStatus.error && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#AB1D2E",
+                      marginBottom: 12,
+                    }}
+                  >
+                    {requestStatus.error}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowRequestForm(true)}
+                >
+                  Request contact with a donor
+                </button>
+              </>
+            ) : (
+              <form
+                onSubmit={handleRequestSubmit}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                {requestStatus.error && (
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      fontSize: 13,
+                      color: "#AB1D2E",
+                    }}
+                  >
+                    {requestStatus.error}
+                  </div>
+                )}
+
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span className="admin-dash-filter-label">
+                    Blood group needed
+                  </span>
+                  <select
+                    className="admin-dash-select"
+                    style={{ width: "100%" }}
+                    name="blood_group"
+                    value={requestForm.blood_group}
+                    onChange={handleRequestChange}
+                    required
+                  >
+                    <option value="">Select</option>
+                    {BLOOD_GROUPS.map((bg) => (
+                      <option key={bg} value={bg}>
+                        {bg}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span className="admin-dash-filter-label">
+                    City (optional)
+                  </span>
+                  <input
+                    className="admin-dash-select"
+                    style={{ width: "100%" }}
+                    type="text"
+                    name="city"
+                    value={requestForm.city}
+                    onChange={handleRequestChange}
+                  />
+                </label>
+
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span className="admin-dash-filter-label">Your name</span>
+                  <input
+                    className="admin-dash-select"
+                    style={{ width: "100%" }}
+                    type="text"
+                    name="requester_name"
+                    value={requestForm.requester_name}
+                    onChange={handleRequestChange}
+                    required
+                  />
+                </label>
+
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span className="admin-dash-filter-label">
+                    Your phone number
+                  </span>
+                  <input
+                    className="admin-dash-select"
+                    style={{ width: "100%" }}
+                    type="tel"
+                    inputMode="numeric"
+                    name="requester_phone"
+                    value={requestForm.requester_phone}
+                    onChange={(e) =>
+                      setRequestForm({
+                        ...requestForm,
+                        requester_phone: e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10),
+                      })
+                    }
+                    maxLength={10}
+                    required
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    gridColumn: "1 / -1",
+                  }}
+                >
+                  <span className="admin-dash-filter-label">
+                    Email (optional)
+                  </span>
+                  <input
+                    className="admin-dash-select"
+                    style={{ width: "100%" }}
+                    type="email"
+                    name="requester_email"
+                    value={requestForm.requester_email}
+                    onChange={handleRequestChange}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    gridColumn: "1 / -1",
+                  }}
+                >
+                  <span className="admin-dash-filter-label">
+                    Reason / urgency (optional)
+                  </span>
+                  <textarea
+                    className="admin-dash-select"
+                    style={{ width: "100%", minHeight: 80, resize: "vertical" }}
+                    name="reason"
+                    value={requestForm.reason}
+                    onChange={handleRequestChange}
+                  />
+                </label>
+
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={requestStatus.loading}
+                  style={{ gridColumn: "1 / -1", justifySelf: "start" }}
+                >
+                  {requestStatus.loading ? "Submitting…" : "Submit request"}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {!profileLoading && myRequests.length > 0 && (
+          <div style={{ marginBottom: 40, maxWidth: 900 }}>
+            <div className="admin-dash-titlebar">
+              <h1 className="admin-dash-heading">My requests</h1>
+              <p className="admin-dash-sub">
+                {myRequestsLoading
+                  ? "Loading…"
+                  : `${myRequests.length} request${myRequests.length === 1 ? "" : "s"} submitted`}
+              </p>
+            </div>
+
+            <div className="admin-dash-table-wrap">
+              <table className="admin-dash-table">
+                <thead>
+                  <tr>
+                    <th>Blood group</th>
+                    <th>City</th>
+                    <th>Reference code</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myRequestsLoading && (
+                    <tr>
+                      <td colSpan={5} className="admin-dash-empty">
+                        Loading…
+                      </td>
+                    </tr>
+                  )}
+                  {!myRequestsLoading &&
+                    myRequests.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <span className="admin-dash-badge">
+                            {r.blood_group}
+                          </span>
+                        </td>
+                        <td>{r.city || "—"}</td>
+                        <td style={{ fontWeight: 600 }}>
+                          {r.reference_code}
+                        </td>
+                        <td>{requestStatusLabel(r.status, r.outcome)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadRequestPdf(r)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#2F6B4F",
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                              fontSize: 12,
+                              padding: 0,
+                            }}
+                            title="Download PDF"
+                          >
+                            PDF
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -254,6 +785,48 @@ export default function Dashboard() {
                 }}
               >
                 {formMessage}
+                {lastDonationCode && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      background: "#fff",
+                      border: "1px dashed #2F6B4F",
+                      borderRadius: 6,
+                      padding: "12px 14px",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "#5A5344" }}>
+                      Show this code when you donate, so the hospital can
+                      confirm it against your record:
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        marginTop: 4,
+                      }}
+                    >
+                      {lastDonationCode}
+                    </div>
+                    {lastDonation && (
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{
+                          marginTop: 12,
+                          border: "1px solid #2F6B4F",
+                          color: "#2F6B4F",
+                          fontSize: 13,
+                          padding: "6px 12px",
+                        }}
+                        onClick={() => handleDownloadDonationPdf(lastDonation)}
+                      >
+                        Download PDF
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -357,20 +930,21 @@ export default function Dashboard() {
                     <th>Blood group</th>
                     <th>Units</th>
                     <th>Location</th>
+                    <th>Reference code</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={5} className="admin-dash-empty">
+                      <td colSpan={6} className="admin-dash-empty">
                         Loading…
                       </td>
                     </tr>
                   )}
                   {!loading && donations.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="admin-dash-empty">
+                      <td colSpan={6} className="admin-dash-empty">
                         No donations logged yet.
                       </td>
                     </tr>
@@ -386,6 +960,39 @@ export default function Dashboard() {
                         </td>
                         <td>{d.units}</td>
                         <td>{d.location || "—"}</td>
+                        <td>
+                          {d.reference_code ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>
+                                {d.reference_code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadDonationPdf(d)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#2F6B4F",
+                                  textDecoration: "underline",
+                                  cursor: "pointer",
+                                  fontSize: 12,
+                                  padding: 0,
+                                }}
+                                title="Download PDF"
+                              >
+                                PDF
+                              </button>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td>
                           {d.status === "completed" && (
                             <span

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../kuotsu-api"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "kuotsu"
+	}
+}

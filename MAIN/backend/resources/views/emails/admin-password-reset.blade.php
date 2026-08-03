@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="margin:0; padding:0; background:#f4f1ec; font-family: Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff; border:1px solid #e0dcd3; border-radius:6px; padding:40px;">
+                    <tr>
+                        <td>
+                            <p style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#ab1d2e; margin:0 0 8px;">
+                                CommunityBlood Admin
+                            </p>
+                            <h2 style="margin:0 0 16px; color:#1a1a1a;">Reset your password</h2>
+                            <p style="font-size:15px; line-height:1.6; color:#444; margin:0 0 28px;">
+                                We received a request to reset your admin account password. Click the button below to choose a new one. This link expires in 60 minutes.
+                            </p>
+                            <table cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="background:#ab1d2e; border-radius:4px;">
+                                        <a href="{{ $resetUrl }}" style="display:inline-block; padding:14px 28px; color:#ffffff; text-decoration:none; font-weight:bold; font-size:15px;">
+                                            Reset Password
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size:13px; color:#888; margin:28px 0 0;">
+                                If you didn't request this, you can safely ignore this email — your password won't change.
+                            </p>
+                            <p style="font-size:12px; color:#aaa; margin:20px 0 0; word-break:break-all;">
+                                Or copy this link: {{ $resetUrl }}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

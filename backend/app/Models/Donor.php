@@ -41,4 +41,11 @@ class Donor extends Authenticatable
     {
         return $this->hasMany(Donation::class);
     }
+
+    // Requests this donor submitted for themselves/someone else (not the
+    // requests they were matched to as a potential donor).
+    public function bloodRequests()
+    {
+        return $this->hasMany(BloodRequest::class, 'donor_id');
+    }
 }

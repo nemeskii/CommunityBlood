@@ -36,7 +36,8 @@ export default function Footer() {
           <span>© {new Date().getFullYear()} Community Blood Donation Network</span>
           <span>
             <Link to="/">Home</Link> · <Link to="/about">About</Link> ·{" "}
-            <Link to="/register">Register</Link>
+            <Link to="/register">Register</Link> ·{" "}
+            <Link to="/hospital/register">Hospital sign-up</Link>
           </span>
         </div>
       </div>
