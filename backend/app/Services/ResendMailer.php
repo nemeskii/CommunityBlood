@@ -40,14 +40,36 @@ class ResendMailer
             'text' => $textContent ?? trim(preg_replace('/\n{3,}/', "\n\n", strip_tags($htmlContent))),
         ];
 
+        $attachments = [];
+
+        // Embed the logo as an inline CID attachment instead of letting the
+        // templates link to it over HTTP. When the <img> src pointed at the
+        // Render API host (communityblood-api.onrender.com) — a different
+        // domain from the verified sending domain (communityblood.dpdns.org)
+        // — Gmail treated that sender/image-host mismatch as a phishing
+        // signal and sent the mail to spam. Templates reference this via
+        // <img src="cid:community-blood-logo">.
+        $logoPath = public_path('images/community-blood-logo.png');
+        if (is_file($logoPath)) {
+            $attachments[] = [
+                'filename' => 'community-blood-logo.png',
+                'content' => base64_encode(file_get_contents($logoPath)),
+                'content_id' => 'community-blood-logo',
+            ];
+        }
+
         if ($pdfBinary !== null) {
             // Must be base64-encoded: passing the raw binary string directly
             // makes Resend's PHP SDK fail JSON-encoding it ("Malformed UTF-8
             // characters"), since raw PDF bytes aren't valid UTF-8.
-            $payload['attachments'] = [[
+            $attachments[] = [
                 'filename' => $pdfFilename ?? 'attachment.pdf',
                 'content' => base64_encode($pdfBinary),
-            ]];
+            ];
+        }
+
+        if (! empty($attachments)) {
+            $payload['attachments'] = $attachments;
         }
 
         try {
