@@ -5,6 +5,7 @@ return [
     'allowed_origins' => [
         'https://kuotsu.vercel.app',
         'http://localhost:5173',
+        'https://communityblood.dpdns.org'
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
