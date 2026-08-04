@@ -3,16 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\DonorMatchMail;
-use App\Mail\RequesterMatchMail;
+use App\Jobs\SendMatchNotifications;
 use App\Models\BloodRequest;
 use App\Models\BloodRequestMatch;
 use App\Models\Donation;
 use App\Models\Donor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -147,7 +144,11 @@ class BloodRequestController extends Controller
         });
 
         if ($result) {
-            $this->notifyOfMatch($result->fresh(['donor', 'bloodRequest']));
+            // Dispatched after the response is sent, not run inline — PDF
+            // generation + mail sending is heavy enough that a crash here
+            // shouldn't take the whole "was the donor matched?" request
+            // down with it. See SendMatchNotifications for details.
+            dispatch(new SendMatchNotifications($result->id))->afterResponse();
         }
 
         return response()->json([
@@ -163,58 +164,12 @@ class BloodRequestController extends Controller
             return response()->json(['message' => 'This match is no longer awaiting a response.'], 409);
         }
 
-        $this->notifyOfMatch($match->fresh(['donor', 'bloodRequest']));
+        dispatch(new SendMatchNotifications($match->id))->afterResponse();
 
         return response()->json([
-            'message' => 'Notification re-sent',
+            'message' => 'Notification re-sending…',
             'match' => $match->fresh(),
         ]);
-    }
-
-    private function notifyOfMatch(BloodRequestMatch $match)
-    {
-        $donor = $match->donor;
-        $bloodRequest = $match->bloodRequest;
-        $confirmUrl = rtrim(env('FRONTEND_URL'), '/') . '/matches/' . $match->confirm_token . '/respond';
-
-        $donorSendOk = true;
-
-        if ($donor && $donor->email) {
-            try {
-                Mail::to($donor->email)->send(new DonorMatchMail($bloodRequest, $donor, $confirmUrl));
-            } catch (\Throwable $e) {
-                $donorSendOk = false;
-
-                Log::error('Donor match email failed', [
-                    'blood_request_match_id' => $match->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        } else {
-            Log::info('Skipped donor match email — no donor or no donor email', [
-                'blood_request_match_id' => $match->id,
-                'donor_exists' => (bool) $donor,
-            ]);
-        }
-
-        if ($bloodRequest->requester_email) {
-            try {
-                Mail::to($bloodRequest->requester_email)->send(new RequesterMatchMail($bloodRequest));
-            } catch (\Throwable $e) {
-                Log::error('Requester match email failed', [
-                    'blood_request_match_id' => $match->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        // Only the donor's send actually gates whether we know they were reachable —
-        // the requester email is a courtesy, not part of the confirmation contract.
-        if ($donorSendOk) {
-            $match->update(['status' => 'notified', 'notified_at' => now(), 'notify_failed' => false]);
-        } else {
-            $match->update(['notify_failed' => true]);
-        }
     }
 
     public function updateStatus(Request $request, BloodRequest $bloodRequest)
