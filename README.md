@@ -545,7 +545,9 @@ Before deploying, verify that sensitive configuration is stored in the hosting p
 
 ## 📸 Screenshots
 
-Add updated application screenshots here as the UI evolves.
+<a href="screenshots/homepage.png">
+  <img src="screenshots/homepage.png" alt="Community Blood Homepage" width="900">
+</a>
 
 ---
 
