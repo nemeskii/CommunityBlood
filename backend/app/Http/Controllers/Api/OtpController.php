@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Donor;
 use App\Models\OtpVerification;
+use App\Services\ResendMailer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class OtpController extends Controller
 {
+    public function __construct(private ResendMailer $mailer)
+    {
+    }
+
     // POST /api/otp/send
     public function send(Request $request)
     {
@@ -27,22 +32,24 @@ class OtpController extends Controller
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        $response = Http::post('https://api.emailjs.com/api/v1.0/email/send', [
-            'service_id' => env('EMAILJS_SERVICE_ID'),
-            'template_id' => env('EMAILJS_TEMPLATE_ID'),
-            'user_id' => env('EMAILJS_PUBLIC_KEY'),
-            'accessToken' => env('EMAILJS_PRIVATE_KEY'),
-            'template_params' => [
-                'email' => $request->email,
-                'passcode' => $code,
-                'time' => now()->addMinutes(10)->format('h:i A'),
-            ],
-        ]);
+        $expiresAt = now()->addMinutes(10)->format('h:i A');
 
-        if ($response->failed()) {
-    \Log::error('EmailJS failed', ['response' => $response->body()]);
-    return response()->json(['message' => 'Failed to send verification code.', 'debug' => $response->body()], 500);
-}
+        $html = view('emails.otp', [
+            'code' => $code,
+            'time' => $expiresAt,
+        ])->render();
+
+        $sent = $this->mailer->send(
+            $request->email,
+            'Your CommunityBlood verification code',
+            $html,
+        );
+
+        if (! $sent) {
+            Log::error('Resend OTP email failed', ['email' => $request->email]);
+
+            return response()->json(['message' => 'Failed to send verification code.'], 500);
+        }
 
         return response()->json(['message' => 'Verification code sent.']);
     }

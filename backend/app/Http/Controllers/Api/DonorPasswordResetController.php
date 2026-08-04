@@ -4,14 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Donor;
+use App\Services\ResendMailer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class DonorPasswordResetController extends Controller
 {
+    public function __construct(private ResendMailer $mailer)
+    {
+    }
+
     // POST /api/donor/forgot-password
     public function forgotPassword(Request $request)
     {
@@ -43,21 +48,20 @@ class DonorPasswordResetController extends Controller
         $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
         $resetUrl = "{$frontendUrl}/donor/reset-password?token={$token}&email=" . urlencode($donor->email);
 
-        $response = Http::post('https://api.emailjs.com/api/v1.0/email/send', [
-            'service_id' => env('EMAILJS_RESET_SERVICE_ID'),
-            'template_id' => env('EMAILJS_RESET_TEMPLATE_ID'),
-            'user_id' => env('EMAILJS_PUBLIC_KEY'),
-            'accessToken' => env('EMAILJS_PRIVATE_KEY'),
-            'template_params' => [
-                'email' => $donor->email,
-                'link' => $resetUrl,
-                'time' => now()->addMinutes(60)->format('h:i A'),
-            ],
-        ]);
+        $html = view('emails.donor-password-reset', [
+            'resetUrl' => $resetUrl,
+        ])->render();
 
-        if ($response->failed()) {
-            \Log::error('EmailJS donor reset email failed', ['response' => $response->body()]);
-            return response()->json(['message' => 'Failed to send reset email.', 'debug' => $response->body()], 500);
+        $sent = $this->mailer->send(
+            $donor->email,
+            'Reset your CommunityBlood password',
+            $html,
+        );
+
+        if (! $sent) {
+            Log::error('Resend donor reset email failed', ['email' => $donor->email]);
+
+            return response()->json(['message' => 'Failed to send reset email.'], 500);
         }
 
         return response()->json([
