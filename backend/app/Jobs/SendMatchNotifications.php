@@ -12,13 +12,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-// Deliberately NOT queued onto a worker — this app has no background worker
-// service. Callers dispatch this with ->afterResponse(), which runs it in
-// the same PHP process right after the HTTP response has already been sent
-// to the browser. That way, if PDF generation or the mail send crashes hard
-// (e.g. an out-of-memory kill on a constrained host), the admin still gets
-// their success response for the match itself — only the notification step
-// is at risk, and it's retryable via the "resend" button either way.
 class SendMatchNotifications
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -30,25 +23,24 @@ class SendMatchNotifications
     public function handle(): void
     {
         $match = BloodRequestMatch::with(['donor', 'bloodRequest'])->find($this->matchId);
-
         if (! $match) {
             Log::warning('SendMatchNotifications: match no longer exists', ['match_id' => $this->matchId]);
-
             return;
         }
+
+        Log::info('SendMatchNotifications: starting', ['match_id' => $this->matchId]);
 
         $donor = $match->donor;
         $bloodRequest = $match->bloodRequest;
         $confirmUrl = rtrim(env('FRONTEND_URL'), '/') . '/matches/' . $match->confirm_token . '/respond';
-
         $donorSendOk = true;
-
         if ($donor && $donor->email) {
             try {
+                Log::info('SendMatchNotifications: sending donor mail', ['match_id' => $match->id]);
                 Mail::to($donor->email)->send(new DonorMatchMail($bloodRequest, $donor, $confirmUrl));
+                Log::info('SendMatchNotifications: donor mail sent ok', ['match_id' => $match->id]);
             } catch (\Throwable $e) {
                 $donorSendOk = false;
-
                 Log::error('Donor match email failed', [
                     'blood_request_match_id' => $match->id,
                     'error' => $e->getMessage(),
@@ -60,10 +52,11 @@ class SendMatchNotifications
                 'donor_exists' => (bool) $donor,
             ]);
         }
-
         if ($bloodRequest->requester_email) {
             try {
+                Log::info('SendMatchNotifications: sending requester mail', ['match_id' => $match->id]);
                 Mail::to($bloodRequest->requester_email)->send(new RequesterMatchMail($bloodRequest));
+                Log::info('SendMatchNotifications: requester mail sent ok', ['match_id' => $match->id]);
             } catch (\Throwable $e) {
                 Log::error('Requester match email failed', [
                     'blood_request_match_id' => $match->id,
@@ -72,16 +65,20 @@ class SendMatchNotifications
             }
         }
 
+        Log::info('SendMatchNotifications: about to update match status', [
+            'match_id' => $match->id,
+            'donorSendOk' => $donorSendOk,
+        ]);
+
         if ($donorSendOk) {
             $match->update(['status' => 'notified', 'notified_at' => now(), 'notify_failed' => false]);
         } else {
             $match->update(['notify_failed' => true]);
         }
+
+        Log::info('SendMatchNotifications: finished', ['match_id' => $match->id]);
     }
 
-    // If even this job dies with a fatal (non-catchable) error, mark the
-    // match as failed rather than leaving it stuck on "proposed" forever
-    // with no resend option visible in the admin UI.
     public function failed(?\Throwable $exception): void
     {
         BloodRequestMatch::where('id', $this->matchId)->update(['notify_failed' => true]);
