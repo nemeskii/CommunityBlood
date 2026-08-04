@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
-use App\Mail\DonationCompletedMail;
 use App\Models\Donation;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class DonationMailService
 {
+    public function __construct(private ResendMailer $mailer)
+    {
+    }
+
     // A donation can be marked completed from three different places
     // (admin approval, hospital confirmation, or admin closing a blood
     // request as fulfilled) — this is called from the Donation model's
@@ -28,7 +31,33 @@ class DonationMailService
         }
 
         try {
-            Mail::to($donor->email)->send(new DonationCompletedMail($donation, $donor));
+            $pdf = Pdf::loadView('pdf.donation-certificate', [
+                'donation' => $donation,
+                'donor' => $donor,
+            ])->setPaper('a4');
+
+            $html = view('emails.donation-completed', [
+                'donation' => $donation,
+                'donor' => $donor,
+            ])->render();
+
+            $text = view('emails.donation-completed-text', [
+                'donation' => $donation,
+                'donor' => $donor,
+            ])->render();
+
+            $sent = $this->mailer->send(
+                $donor->email,
+                'Thank you for your donation, ' . $donor->full_name . '!',
+                $html,
+                $pdf->output(),
+                'communityblood-donation-' . $donation->reference_code . '.pdf',
+                $text,
+            );
+
+            if (! $sent) {
+                throw new \RuntimeException('Resend reported failure — see previous log entry for details');
+            }
         } catch (\Throwable $e) {
             Log::error('Donation completion email failed', [
                 'donation_id' => $donation->id,

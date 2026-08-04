@@ -13,9 +13,12 @@ use App\Http\Controllers\Api\MatchResponseController;
 use App\Http\Controllers\Api\HospitalAuthController;
 use App\Http\Controllers\Api\HospitalPortalController;
 use App\Http\Controllers\Api\AdminHospitalController;
+use App\Http\Controllers\Api\ContactController;
 
 Route::post('/otp/send', [OtpController::class, 'send']);
 Route::post('/otp/verify', [OtpController::class, 'verify']);
+
+Route::post('/contact', [ContactController::class, 'send']);
 
 Route::post('/admin/forgot-password', [AdminPasswordResetController::class, 'forgotPassword']);
 Route::post('/admin/reset-password', [AdminPasswordResetController::class, 'resetPassword']);

@@ -13,7 +13,7 @@
                             <table cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
                                 <tr>
                                     <td style="vertical-align:middle;">
-                                        <img src="{{ $message->embed(public_path('images/community-blood-logo.png')) }}" width="36" height="36" alt="CommunityBlood" style="display:block; border-radius:8px;">
+                                        <img src="{{ config('app.url') }}/images/community-blood-logo.png" width="36" height="36" alt="CommunityBlood" style="display:block; border-radius:8px;">
                                     </td>
                                     <td style="vertical-align:middle; padding-left:10px;">
                                         <p style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:#ab1d2e; margin:0;">

@@ -1,13 +1,9 @@
 import { useState } from "react";
-import emailjs from "@emailjs/browser";
+import api from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../styles/theme.css";
 import "./Home.css";
-
-const EMAILJS_SERVICE_ID = "service_vgozpvy";
-const EMAILJS_TEMPLATE_ID = "template_agx2w6j";
-const EMAILJS_PUBLIC_KEY = "47UzJlkukcVvJQNxl";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
@@ -22,20 +18,15 @@ export default function Contact() {
     e.preventDefault();
     setStatus("sending");
     try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        {
-          name: form.name,
-          email: form.email,
-          message: form.message,
-        },
-        EMAILJS_PUBLIC_KEY,
-      );
+      await api.post("/contact", {
+        name: form.name,
+        email: form.email,
+        message: form.message,
+      });
       setStatus("sent");
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
-      console.error("EmailJS error:", err);
+      console.error("Contact form error:", err);
       setStatus("error");
     }
   };

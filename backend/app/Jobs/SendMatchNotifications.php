@@ -2,15 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Mail\DonorMatchMail;
-use App\Mail\RequesterMatchMail;
 use App\Models\BloodRequestMatch;
+use App\Services\ResendMailer;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class SendMatchNotifications
 {
@@ -20,7 +19,7 @@ class SendMatchNotifications
     {
     }
 
-    public function handle(): void
+    public function handle(ResendMailer $mailer): void
     {
         $match = BloodRequestMatch::with(['donor', 'bloodRequest'])->find($this->matchId);
         if (! $match) {
@@ -34,10 +33,42 @@ class SendMatchNotifications
         $bloodRequest = $match->bloodRequest;
         $confirmUrl = rtrim(env('FRONTEND_URL'), '/') . '/matches/' . $match->confirm_token . '/respond';
         $donorSendOk = true;
+
         if ($donor && $donor->email) {
             try {
                 Log::info('SendMatchNotifications: sending donor mail', ['match_id' => $match->id]);
-                Mail::to($donor->email)->send(new DonorMatchMail($bloodRequest, $donor, $confirmUrl));
+
+                $pdf = Pdf::loadView('pdf.match-confirmation', [
+                    'audience' => 'donor',
+                    'bloodRequest' => $bloodRequest,
+                    'donor' => $donor,
+                ])->setPaper('a4');
+
+                $html = view('emails.donor-match', [
+                    'bloodRequest' => $bloodRequest,
+                    'donor' => $donor,
+                    'confirmUrl' => $confirmUrl,
+                ])->render();
+
+                $text = view('emails.donor-match-text', [
+                    'bloodRequest' => $bloodRequest,
+                    'donor' => $donor,
+                    'confirmUrl' => $confirmUrl,
+                ])->render();
+
+                $sent = $mailer->send(
+                    $donor->email,
+                    "You've been matched to a blood request ({$bloodRequest->blood_group})",
+                    $html,
+                    $pdf->output(),
+                    'communityblood-match-' . $bloodRequest->reference_code . '.pdf',
+                    $text,
+                );
+
+                if (! $sent) {
+                    throw new \RuntimeException('Resend reported failure — see previous log entry for details');
+                }
+
                 Log::info('SendMatchNotifications: donor mail sent ok', ['match_id' => $match->id]);
             } catch (\Throwable $e) {
                 $donorSendOk = false;
@@ -52,10 +83,37 @@ class SendMatchNotifications
                 'donor_exists' => (bool) $donor,
             ]);
         }
+
         if ($bloodRequest->requester_email) {
             try {
                 Log::info('SendMatchNotifications: sending requester mail', ['match_id' => $match->id]);
-                Mail::to($bloodRequest->requester_email)->send(new RequesterMatchMail($bloodRequest));
+
+                $pdf = Pdf::loadView('pdf.match-confirmation', [
+                    'audience' => 'requester',
+                    'bloodRequest' => $bloodRequest,
+                ])->setPaper('a4');
+
+                $html = view('emails.requester-match', [
+                    'bloodRequest' => $bloodRequest,
+                ])->render();
+
+                $text = view('emails.requester-match-text', [
+                    'bloodRequest' => $bloodRequest,
+                ])->render();
+
+                $sent = $mailer->send(
+                    $bloodRequest->requester_email,
+                    'A donor has been found for your blood request',
+                    $html,
+                    $pdf->output(),
+                    'communityblood-request-' . $bloodRequest->reference_code . '.pdf',
+                    $text,
+                );
+
+                if (! $sent) {
+                    throw new \RuntimeException('Resend reported failure — see previous log entry for details');
+                }
+
                 Log::info('SendMatchNotifications: requester mail sent ok', ['match_id' => $match->id]);
             } catch (\Throwable $e) {
                 Log::error('Requester match email failed', [

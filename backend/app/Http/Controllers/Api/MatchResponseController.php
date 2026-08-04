@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\RequesterMatchConfirmedMail;
 use App\Models\BloodRequestMatch;
 use App\Models\Donor;
+use App\Services\ResendMailer;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class MatchResponseController extends Controller
@@ -102,8 +102,33 @@ class MatchResponseController extends Controller
         // stale tab) doesn't re-send the email.
         if ($updated > 0 && $validated['action'] === 'confirm' && $match->donor && $match->bloodRequest?->requester_email) {
             try {
-                Mail::to($match->bloodRequest->requester_email)
-                    ->send(new RequesterMatchConfirmedMail($match->bloodRequest, $match->donor));
+                $pdf = Pdf::loadView('pdf.match-donor-confirmed', [
+                    'bloodRequest' => $match->bloodRequest,
+                    'donor' => $match->donor,
+                ])->setPaper('a4');
+
+                $html = view('emails.requester-match-confirmed', [
+                    'bloodRequest' => $match->bloodRequest,
+                    'donor' => $match->donor,
+                ])->render();
+
+                $text = view('emails.requester-match-confirmed-text', [
+                    'bloodRequest' => $match->bloodRequest,
+                    'donor' => $match->donor,
+                ])->render();
+
+                $sent = app(ResendMailer::class)->send(
+                    $match->bloodRequest->requester_email,
+                    'Your donor has confirmed — contact details attached',
+                    $html,
+                    $pdf->output(),
+                    'communityblood-request-' . $match->bloodRequest->reference_code . '.pdf',
+                    $text,
+                );
+
+                if (! $sent) {
+                    throw new \RuntimeException('Resend reported failure — see previous log entry for details');
+                }
             } catch (\Throwable $e) {
                 Log::error('Requester match-confirmed email failed', [
                     'blood_request_match_id' => $match->id,
