@@ -14,8 +14,6 @@ use Illuminate\Validation\Rule;
 
 class MatchResponseController extends Controller
 {
-    // Public, no-login landing info for the magic link — lets the confirm page
-    // show what's being asked before the donor commits to an action.
     public function showByToken(string $token)
     {
         $match = BloodRequestMatch::with(['bloodRequest', 'donor:id,full_name'])
@@ -33,7 +31,6 @@ class MatchResponseController extends Controller
         ]);
     }
 
-    // Public, no-login confirm/decline via the emailed link.
     public function respondByToken(Request $request, string $token)
     {
         $match = BloodRequestMatch::where('confirm_token', $token)->firstOrFail();
@@ -41,7 +38,6 @@ class MatchResponseController extends Controller
         return $this->applyResponse($request, $match, 'link');
     }
 
-    // Authenticated donor's pending items, for the in-app "you've been matched" card.
     public function pendingForDonor(Request $request)
     {
         $donor = $request->user();
@@ -59,7 +55,6 @@ class MatchResponseController extends Controller
         return response()->json($matches);
     }
 
-    // Authenticated donor confirm/decline from inside the app.
     public function respondInApp(Request $request, BloodRequestMatch $match)
     {
         $donor = $request->user();
@@ -77,10 +72,6 @@ class MatchResponseController extends Controller
             'action' => ['required', Rule::in(['confirm', 'decline'])],
         ]);
 
-        // Atomic, guarded update: only transitions a match that's still
-        // proposed/notified. A second click (in-app after link, or a stale
-        // tab) just returns the state someone else already settled it to —
-        // no error, no double-write, no race between the two channels.
         $updated = DB::table('blood_request_matches')
             ->where('id', $match->id)
             ->whereIn('status', BloodRequestMatch::RESPONDABLE)
@@ -96,10 +87,6 @@ class MatchResponseController extends Controller
 
         $match = $match->fresh(['bloodRequest', 'donor']);
 
-        // Only reveal donor identity to the requester once the donor has
-        // actually confirmed — and only on the click that caused the
-        // transition, so a duplicate confirm (link then in-app, or a
-        // stale tab) doesn't re-send the email.
         if ($updated > 0 && $validated['action'] === 'confirm' && $match->donor && $match->bloodRequest?->requester_email) {
             try {
                 $pdf = Pdf::loadView('pdf.match-donor-confirmed', [
@@ -145,8 +132,6 @@ class MatchResponseController extends Controller
         ]);
     }
 
-    // --- Admin side: live-ish badge without a socket server ---
-
     public function unacknowledgedCount()
     {
         $count = BloodRequestMatch::whereIn('status', ['confirmed', 'declined'])
@@ -156,12 +141,7 @@ class MatchResponseController extends Controller
 
         return response()->json(['count' => $count]);
     }
-
-    // Full list backing the "N new responses" badge — deliberately not scoped
-    // to pending blood requests, since a donor can confirm/decline after the
-    // request has already moved to contacted/closed. Without this, admin had
-    // no way to acknowledge (and thus clear) a response on a non-pending
-    // request, so the badge could never reach zero.
+    
     public function unacknowledged()
     {
         $matches = BloodRequestMatch::whereIn('status', ['confirmed', 'declined'])

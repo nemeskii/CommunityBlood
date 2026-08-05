@@ -12,11 +12,6 @@ class DonationMailService
     {
     }
 
-    // A donation can be marked completed from three different places
-    // (admin approval, hospital confirmation, or admin closing a blood
-    // request as fulfilled) — this is called from the Donation model's
-    // observer so all three go through one path instead of three copies
-    // of the same mail-sending code.
     public function sendCompletionEmail(Donation $donation): void
     {
         $donation->loadMissing('donor');

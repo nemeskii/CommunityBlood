@@ -19,9 +19,7 @@ class RequesterMatchMail extends Mailable
 
     public function build(): self
     {
-        // Deliberately no donor identity here — the requester only learns
-        // who the donor is once they've confirmed (see
-        // RequesterMatchConfirmedMail), sent from MatchResponseController.
+        
         $pdf = Pdf::loadView('pdf.match-confirmation', [
             'audience' => 'requester',
             'bloodRequest' => $this->bloodRequest,

@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('donations', function (Blueprint $table) {
-            // Shown to the donor as their "card" for this donation trip.
             $table->string('reference_code', 20)->nullable()->unique()->after('id');
 
             $table->foreignId('hospital_id')

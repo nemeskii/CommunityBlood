@@ -61,7 +61,6 @@ if (!$verified) {
         ], 201);
     }
 
-    // Protected: donor fills in blood group, gender, city, address (step 2)
     public function completeProfile(Request $request)
     {
         $validated = $request->validate([
@@ -80,7 +79,6 @@ if (!$verified) {
         ]);
     }
 
-    // Admin only: list all donors (with optional filters)
     public function index(Request $request)
     {
         $query = Donor::query();
@@ -102,9 +100,6 @@ if (!$verified) {
         );
     }
 
-    /**
-     * Public endpoint: available donor counts per blood type.
-     */
     public function inventory()
     {
         $types = ['O-', 'O+', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
@@ -122,10 +117,6 @@ if (!$verified) {
         return response()->json($result);
     }
 
-    /**
-     * Public endpoint: search available donor counts by blood group and/or city.
-     * Returns aggregate counts only — no donor names, contact info, or IDs.
-     */
     public function search(Request $request)
     {
         $request->validate([
@@ -160,13 +151,11 @@ if (!$verified) {
         ]);
     }
 
-    // Admin only: view single donor
     public function show(Donor $donor)
     {
         return response()->json($donor);
     }
 
-    // Admin only: update donor
     public function update(Request $request, Donor $donor)
     {
         $validated = $request->validate([
@@ -181,14 +170,13 @@ if (!$verified) {
         return response()->json(['message' => 'Donor updated', 'donor' => $donor]);
     }
 
-    // Admin only: delete donor
     public function destroy(Donor $donor)
     {
         $donor->delete();
 
         return response()->json(['message' => 'Donor removed']);
     }
-    // Admin only: securely view a donor's government ID image
+    
     public function governmentId(Donor $donor)
     {
         if (!$donor->government_id_image || !Storage::disk('local')->exists($donor->government_id_image)) {

@@ -14,11 +14,6 @@ return new class extends Migration
         });
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {
-            // Postgres: enum columns are varchar + CHECK constraint under the hood.
-            // Laravel's ->enum()->change() tries to alter type and constraint in
-            // one statement, which isn't valid Postgres syntax. We only need to
-            // drop NOT NULL here — the allowed values already exist from the
-            // original CREATE TABLE, so there's nothing else to change.
             DB::statement('ALTER TABLE donors ALTER COLUMN blood_group DROP NOT NULL');
             DB::statement('ALTER TABLE donors ALTER COLUMN gender DROP NOT NULL');
             DB::statement('ALTER TABLE donors ALTER COLUMN city DROP NOT NULL');

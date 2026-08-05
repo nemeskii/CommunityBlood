@@ -139,7 +139,6 @@ export default function AdminDashboard() {
       });
       setDonations(res.data);
     } catch (err) {
-      // non-critical, ignore
     } finally {
       setDonationsLoading(false);
     }
@@ -153,7 +152,6 @@ export default function AdminDashboard() {
       });
       setBloodRequests(res.data);
     } catch (err) {
-      // non-critical, ignore
     } finally {
       setBloodRequestsLoading(false);
     }
@@ -186,7 +184,6 @@ export default function AdminDashboard() {
       );
       setSuggestions(res.data);
     } catch (e) {
-      // non-critical, ignore
     } finally {
       setSuggestionsLoading(false);
     }

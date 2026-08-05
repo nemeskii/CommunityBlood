@@ -43,9 +43,6 @@ class AdminHospitalController extends Controller
         return response()->json(['message' => 'Hospital removed']);
     }
 
-    // Everything any hospital has confirmed, across the whole network —
-    // this is the only place a hospital-side confirmation becomes visible
-    // to admin, since it never re-enters the "pending" queues.
     public function confirmations(Request $request)
     {
         $donations = Donation::whereNotNull('hospital_id')

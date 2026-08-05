@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class DonationController extends Controller
 {
-    // Donor: view their own donation history
+
     public function index(Request $request)
     {
         $donations = $request->user()->donations()->latest()->get();
@@ -16,7 +16,6 @@ class DonationController extends Controller
         return response()->json($donations);
     }
 
-    // Donor: log/request a new donation
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -34,7 +33,6 @@ class DonationController extends Controller
         ], 201);
     }
 
-    // Admin: view all donations (optionally filtered by status)
     public function adminIndex(Request $request)
     {
         $query = Donation::with('donor:id,full_name,phone')->latest();
@@ -46,7 +44,6 @@ class DonationController extends Controller
         return response()->json($query->get());
     }
 
-    // Admin: approve or reject a donation
     public function updateStatus(Request $request, Donation $donation)
     {
         $validated = $request->validate([
@@ -55,8 +52,6 @@ class DonationController extends Controller
 
         $donation->update(['status' => $validated['status']]);
 
-        // On approval, update the donor's record: mark last donation date,
-        // and set them unavailable while they recover
         if ($validated['status'] === 'completed') {
             $donation->donor->update([
                 'last_donation_date' => $donation->donation_date,

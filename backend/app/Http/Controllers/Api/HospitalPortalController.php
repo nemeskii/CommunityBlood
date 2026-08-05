@@ -20,8 +20,6 @@ class HospitalPortalController extends Controller
         return $hospital;
     }
 
-    // Hospital: list everything this hospital has confirmed, most recent first —
-    // donations and blood requests interleaved into one feed.
     public function history(Request $request)
     {
         $hospital = $this->requireHospital($request);
@@ -64,9 +62,6 @@ class HospitalPortalController extends Controller
         return response()->json($history);
     }
 
-    // A hospital desk types/scans whatever code the donor or requester
-    // shows them — "RQ-" is a blood request, "DN-" is a donation. One box,
-    // one lookup, so front-desk staff don't need to know which is which.
     public function lookup(Request $request)
     {
         $this->requireHospital($request);
@@ -104,7 +99,6 @@ class HospitalPortalController extends Controller
         return response()->json(['message' => 'Unrecognized code format.'], 422);
     }
 
-    // Hospital confirms a donor actually donated at their facility.
     public function confirmDonation(Request $request, Donation $donation)
     {
         $hospital = $this->requireHospital($request);
@@ -126,11 +120,6 @@ class HospitalPortalController extends Controller
         ]);
     }
 
-    // Hospital confirms the requester actually received blood. Mirrors the
-    // admin "close as fulfilled" path (BloodRequestController@updateStatus)
-    // but the confirmation now comes from the facility, not admin say-so —
-    // and logs a matching Donation record for whichever donor was matched,
-    // same dedupe guard as the admin path.
     public function confirmRequest(Request $request, BloodRequest $bloodRequest)
     {
         $hospital = $this->requireHospital($request);

@@ -26,9 +26,6 @@ class BloodRequestController extends Controller
             'reason' => 'nullable|string|max:1000',
         ]);
 
-        // This endpoint is public so a guest can submit a request without an
-        // account — but if the request carries a valid donor token, tag the
-        // request with that donor so it shows up in their "My requests" list.
         $donor = $request->user('sanctum');
         if ($donor instanceof Donor) {
             $validated['donor_id'] = $donor->id;
@@ -42,7 +39,6 @@ class BloodRequestController extends Controller
         ], 201);
     }
 
-    // Donor: view the blood requests they've submitted themselves.
     public function myRequests(Request $request)
     {
         $requests = $request->user()
@@ -70,7 +66,6 @@ class BloodRequestController extends Controller
         );
     }
 
-    // Full proposal history for one request — who was tried, and what happened.
     public function matchHistory(BloodRequest $bloodRequest)
     {
         $matches = $bloodRequest->matches()
@@ -110,9 +105,6 @@ class BloodRequestController extends Controller
         $newDonorId = $validated['donor_id'] ?? null;
 
         $result = DB::transaction(function () use ($bloodRequest, $newDonorId) {
-            // Any match still awaiting a response gets superseded, not silently
-            // overwritten — the donor's old link/in-app item stops working instead
-            // of quietly resolving against whoever admin picks next.
             $previousMatch = $bloodRequest->activeMatch;
             if ($previousMatch && $previousMatch->isRespondable()) {
                 $previousMatch->update(['status' => 'cancelled']);
@@ -144,10 +136,6 @@ class BloodRequestController extends Controller
         });
 
         if ($result) {
-            // Dispatched after the response is sent, not run inline — PDF
-            // generation + mail sending is heavy enough that a crash here
-            // shouldn't take the whole "was the donor matched?" request
-            // down with it. See SendMatchNotifications for details.
             dispatch(new SendMatchNotifications($result->id))->afterResponse();
         }
 
@@ -156,8 +144,7 @@ class BloodRequestController extends Controller
             'request' => $bloodRequest->fresh()->load('activeMatch.donor'),
         ]);
     }
-
-    // Admin retry when the initial notification failed to send.
+    
     public function resendMatchNotification(BloodRequestMatch $match)
     {
         if (! $match->isRespondable()) {

@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\Hash;
 
 class HospitalAuthController extends Controller
 {
-    // Self-service registration. Left unapproved until an admin confirms
-    // this is a real facility — see login(), which blocks unapproved
-    // hospitals from ever getting a token.
+    
     public function register(Request $request)
     {
         $validated = $request->validate([

@@ -133,8 +133,6 @@ export default function Home() {
     return { type, units, level: getLevel(units), pct: getPct(units) };
   });
 
-  // Cycle the hero card through each blood type every 3s.
-  // slideIndex is in the dependency array so manual nav resets the timer.
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setSlideIndex((i) => (i + 1) % BLOOD_TYPE_ORDER.length);

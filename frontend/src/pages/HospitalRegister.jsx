@@ -23,7 +23,6 @@ export default function HospitalRegister() {
     const cleanValue =
       name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value;
     setForm({ ...form, [name]: cleanValue });
-    // clear that field's error as soon as the user edits it
     if (fieldErrors[name]) {
       setFieldErrors({ ...fieldErrors, [name]: "" });
     }

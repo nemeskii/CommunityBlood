@@ -16,10 +16,6 @@ return new class extends Migration
             $table->string('phone');
             $table->string('city')->nullable();
             $table->string('address')->nullable();
-            // A hospital can register itself, but can't confirm donations/requests
-            // until an admin has verified it's a real facility. Same trust
-            // problem as anyone claiming to be an authority — don't take
-            // self-registration as proof.
             $table->boolean('approved')->default(false);
             $table->timestamps();
         });

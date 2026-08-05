@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // Admin login - returns a Sanctum API token
     public function login(Request $request)
     {
         $request->validate([
@@ -28,7 +27,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'Not authorized as admin'], 403);
         }
 
-        // Revoke old tokens (optional, keeps it clean)
         $user->tokens()->delete();
 
         $token = $user->createToken('admin-token')->plainTextToken;
@@ -44,7 +42,6 @@ class AuthController extends Controller
         ]);
     }
 
-    // Logout - revoke current token
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -52,7 +49,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out']);
     }
 
-    // Get currently authenticated admin
     public function me(Request $request)
     {
         return response()->json($request->user());

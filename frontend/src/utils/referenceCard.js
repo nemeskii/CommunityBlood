@@ -5,16 +5,6 @@ const INK = "#22201B";
 const MUTED = "#5A5344";
 const LINE = "#E4DCC8";
 
-/**
- * Renders a simple, printable reference card as a PDF and triggers a download.
- *
- * @param {Object} opts
- * @param {"donation"|"request"} opts.type
- * @param {string} opts.referenceCode
- * @param {string} opts.heading - e.g. "Donation reference" / "Blood request reference"
- * @param {Array<{label: string, value: string}>} opts.rows - detail rows to print
- * @param {string} [opts.note] - footer note shown under the code
- */
 export function downloadReferenceCard({ type, referenceCode, heading, rows = [], note }) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();

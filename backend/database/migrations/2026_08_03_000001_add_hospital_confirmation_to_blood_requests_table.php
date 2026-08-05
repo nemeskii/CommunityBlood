@@ -9,9 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('blood_requests', function (Blueprint $table) {
-            // Shown to the requester as their "card" — this is what they
-            // hand to hospital staff so the hospital can look the request
-            // up without needing an account or login of the requester's own.
             $table->string('reference_code', 20)->nullable()->unique()->after('id');
 
             $table->foreignId('hospital_id')

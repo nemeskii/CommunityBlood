@@ -26,9 +26,6 @@ class DonorPasswordResetController extends Controller
 
         $donor = Donor::where('email', $request->email)->first();
 
-        // Always return a generic success message, whether or not the
-        // email matches a donor account, so we don't leak which emails
-        // are registered.
         if (! $donor) {
             return response()->json([
                 'message' => 'If that email is registered, a reset link has been sent.',
@@ -86,8 +83,7 @@ class DonorPasswordResetController extends Controller
             return response()->json(['message' => 'Invalid or expired reset link.'], 422);
         }
 
-        // Token expires after 60 minutes
-        if (now()->diffInMinutes($record->created_at) > 60) {
+        if (now()->diffInMinutes($record->created_at) > 10) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
             return response()->json(['message' => 'This reset link has expired. Please request a new one.'], 422);
@@ -105,10 +101,8 @@ class DonorPasswordResetController extends Controller
 
         $donor->update(['password' => Hash::make($request->password)]);
 
-        // Reset link is single-use
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
-        // Revoke all existing donor tokens for this account as a safety measure
         $donor->tokens()->delete();
 
         return response()->json(['message' => 'Password has been reset. You can now log in.']);

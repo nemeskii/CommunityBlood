@@ -22,7 +22,6 @@ export default function HospitalDashboard() {
       const res = await api.get("/hospital/history");
       setHistory(res.data);
     } catch (err) {
-      // non-critical — the lookup tool still works without this
     } finally {
       setHistoryLoading(false);
     }
@@ -36,7 +35,6 @@ export default function HospitalDashboard() {
     try {
       await api.post("/hospital/logout");
     } catch (e) {
-      // ignore
     }
     localStorage.removeItem("hospital_token");
     navigate("/hospital/login");

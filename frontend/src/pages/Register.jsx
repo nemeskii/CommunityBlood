@@ -24,7 +24,6 @@ const labelStyle = {
   fontSize: 14,
 };
 
-// Donor must be at least 18 years old; cap the earliest allowed year too.
 const today = new Date();
 const MAX_DOB = new Date(
   today.getFullYear() - 18,
@@ -85,13 +84,11 @@ export default function Register() {
     error: "",
   });
 
-  // --- OTP state ---
   const [emailVerified, setEmailVerified] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpStatus, setOtpStatus] = useState({ loading: false, error: "" });
 
-  // --- Password visibility state ---
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -110,7 +107,6 @@ export default function Register() {
       return;
     }
     if (name === "email") {
-      // if they edit the email after verifying, reset verification
       setEmailVerified(false);
       setOtpSent(false);
       setOtpCode("");

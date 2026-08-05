@@ -28,9 +28,6 @@ class AdminPasswordResetController extends Controller
             ->where('is_admin', true)
             ->first();
 
-        // Always return a generic success message, whether or not the
-        // email matches an admin account, so we don't leak which emails
-        // are registered as admins.
         if (! $user) {
             return response()->json([
                 'message' => 'If that email is registered, a reset link has been sent.',
@@ -88,8 +85,7 @@ class AdminPasswordResetController extends Controller
             return response()->json(['message' => 'Invalid or expired reset link.'], 422);
         }
 
-        // Token expires after 60 minutes
-        if (now()->diffInMinutes($record->created_at) > 60) {
+        if (now()->diffInMinutes($record->created_at) > 10) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
             return response()->json(['message' => 'This reset link has expired. Please request a new one.'], 422);
@@ -109,10 +105,8 @@ class AdminPasswordResetController extends Controller
 
         $user->update(['password' => Hash::make($request->password)]);
 
-        // Reset link is single-use
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-        // Revoke all existing admin tokens for this user as a safety measure
+        
         $user->tokens()->delete();
 
         return response()->json(['message' => 'Password has been reset. You can now log in.']);

@@ -7,22 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class EmailJsMailer
 {
-    /**
-     * Send a transactional email (optionally with a PDF attached) through
-     * EmailJS's REST API — the same endpoint OtpController already uses
-     * successfully, so this reuses whatever sending reputation that
-     * already has with Gmail instead of going through Laravel's own
-     * mailer (see SendMatchNotifications / DonationMailService).
-     *
-     * All callers share ONE EmailJS template (EMAILJS_PDF_TEMPLATE_ID).
-     * That template just needs:
-     *   - "To Email" set to the dynamic variable {{to_email}}
-     *   - Subject set to {{subject}}
-     *   - Body content set to {{{html_content}}}  — TRIPLE braces, so
-     *     EmailJS renders it as raw HTML instead of escaping it
-     *   - One "Variable Attachment" with parameter name "pdf_attachment"
-     *     and filename set to the dynamic variable {{pdf_filename}}
-     */
+    
     public function send(
         string $toEmail,
         string $subject,

@@ -28,7 +28,6 @@ export default function Dashboard() {
   const [lastDonationCode, setLastDonationCode] = useState("");
   const [lastDonation, setLastDonation] = useState(null);
 
-  // --- Request blood form state ---
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestForm, setRequestForm] = useState({
     blood_group: "",
@@ -74,7 +73,6 @@ export default function Dashboard() {
       const res = await api.get("/donor/matches/pending");
       setPendingMatches(res.data);
     } catch (err) {
-      // non-critical — the rest of the dashboard still works without this
     } finally {
       setMatchesLoading(false);
     }
@@ -133,7 +131,6 @@ export default function Dashboard() {
       const res = await api.get("/donor/blood-requests");
       setMyRequests(res.data);
     } catch (err) {
-      // non-critical — the rest of the dashboard still works without this
     } finally {
       setMyRequestsLoading(false);
     }
@@ -172,7 +169,6 @@ export default function Dashboard() {
     try {
       await api.post("/donor/logout");
     } catch (e) {
-      // ignore
     }
     localStorage.removeItem("donor_token");
     navigate("/donor/login");
@@ -227,8 +223,6 @@ export default function Dashboard() {
   };
 
   const handleDownloadRequestPdf = (record) => {
-    // Default to the form just submitted (no persisted record yet);
-    // otherwise use the actual saved request row from "My requests".
     const r = record || {
       reference_code: requestStatus.referenceCode,
       requester_name: requestForm.requester_name,

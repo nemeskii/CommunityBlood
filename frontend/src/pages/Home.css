@@ -546,12 +546,6 @@
   }
 }
 
-/* ============================================================
-   Photography — extends the donor-card "stamp/plate" language
-   into photo treatments used across the homepage.
-   ============================================================ */
-
-/* ---- Shared photo-plate component (used by About + drive cards) ---- */
 .photo-plate {
   position: relative;
   background: var(--paper);
@@ -719,10 +713,6 @@
   text-align: center;
 }
 
-/* Featured hero photo — deliberately NOT sharing .photo-plate's
-   paper/border look, since it should read as its own distinct,
-   larger element rather than matching the Live Inventory card.
-   Straightened (no rotation) and enlarged per design request. */
 .hero-photo-feature {
   position: relative;
   width: 460px;
