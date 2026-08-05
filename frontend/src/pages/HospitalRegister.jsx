@@ -20,7 +20,9 @@ export default function HospitalRegister() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    const cleanValue =
+      name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value;
+    setForm({ ...form, [name]: cleanValue });
     // clear that field's error as soon as the user edits it
     if (fieldErrors[name]) {
       setFieldErrors({ ...fieldErrors, [name]: "" });
@@ -197,6 +199,8 @@ export default function HospitalRegister() {
                   className="donor-login-input"
                   type="tel"
                   name="phone"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={form.phone}
                   onChange={handleChange}
                   aria-invalid={!!fieldErrors.phone}
