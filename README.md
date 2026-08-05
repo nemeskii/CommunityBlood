@@ -222,9 +222,9 @@ Update the backend `.env` file with your MySQL configuration:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=your_database_name
-DB_USERNAME=your_database_username
-DB_PASSWORD=your_database_password
+DB_DATABASE=
+DB_USERNAME=
+DB_PASSWORD=
 ```
 
 Then run the migrations:
@@ -352,7 +352,7 @@ For production, set it to the deployed backend URL.
 For example:
 
 ```env
-VITE_API_URL=https://your-backend-domain.com
+VITE_API_URL=
 ```
 
 Do not include `/api` in `VITE_API_URL`, because the Axios configuration already adds `/api`.
@@ -373,9 +373,9 @@ Example database configuration:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=your_database_name
-DB_USERNAME=your_database_username
-DB_PASSWORD=your_database_password
+DB_DATABASE=
+DB_USERNAME=
+DB_PASSWORD=
 ```
 
 ---
